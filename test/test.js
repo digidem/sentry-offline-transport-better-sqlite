@@ -1,25 +1,25 @@
 /** @import { Envelope } from '@sentry/core' */
 
 import assert from 'node:assert/strict'
-import { test, describe, before } from 'node:test'
+import { test, describe } from 'node:test'
 import { createEnvelope } from '@sentry/core'
 import { makeOfflineSqliteTransport, SqliteOfflineStore } from '../src/index.js'
 import Database from 'better-sqlite3'
 
 await describe('SqliteOfflineStore', async () => {
-  let db
-  let store
-  before(() => {
-    db = new Database(':memory:')
-    store = new SqliteOfflineStore(db)
-  })
   await test('push should insert an envelope into the database', async () => {
+    const db = new Database(':memory:')
+    const store = new SqliteOfflineStore(db)
+
     const env = newEnv()
     await store.push(env)
     const record = await store.shift()
     assert.deepStrictEqual(record, env)
   })
   await test('unshift should insert an envelope at the beginning of the queue', async () => {
+    const db = new Database(':memory:')
+    const store = new SqliteOfflineStore(db)
+
     const firstEnv = newEnv('a')
     const secondEnv = newEnv('b')
     await store.unshift(firstEnv)
@@ -30,6 +30,9 @@ await describe('SqliteOfflineStore', async () => {
     assert.deepStrictEqual(record2, firstEnv)
   })
   await test('shift should remove and return the oldest envelope', async () => {
+    const db = new Database(':memory:')
+    const store = new SqliteOfflineStore(db)
+
     const env = newEnv()
     await store.push(env)
     const record = await store.shift()
