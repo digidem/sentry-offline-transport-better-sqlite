@@ -1,49 +1,40 @@
-import { strict as assert } from 'node:assert'
+/** @import { Envelope } from '@sentry/core' */
+
+import assert from 'node:assert/strict'
 import { test, describe, before } from 'node:test'
-import type { Envelope } from '@sentry/core'
 import { createEnvelope } from '@sentry/core'
-import { makeOfflineSqliteTransport, SqliteOfflineStore } from '../src/index.ts'
+import { makeOfflineSqliteTransport, SqliteOfflineStore } from '../src/index.js'
 import Database from 'better-sqlite3'
 
 await describe('SqliteOfflineStore', async () => {
-  let db: Database
-  let store: SqliteOfflineStore
-
+  let db
+  let store
   before(() => {
     db = new Database(':memory:')
     store = new SqliteOfflineStore(db)
   })
-
   await test('push should insert an envelope into the database', async () => {
-    const env: Envelope = newEnv()
-
+    const env = newEnv()
     await store.push(env)
-
     const record = await store.shift()
     assert.deepStrictEqual(record, env)
   })
-
   await test('unshift should insert an envelope at the beginning of the queue', async () => {
-    const firstEnv: Envelope = newEnv('a')
-    const secondEnv: Envelope = newEnv('b')
+    const firstEnv = newEnv('a')
+    const secondEnv = newEnv('b')
     await store.unshift(firstEnv)
     await store.unshift(secondEnv)
-
     const record1 = await store.shift()
     assert.deepStrictEqual(record1, secondEnv)
-
     const record2 = await store.shift()
     assert.deepStrictEqual(record2, firstEnv)
   })
-
   await test('shift should remove and return the oldest envelope', async () => {
-    const env: Envelope = newEnv()
+    const env = newEnv()
     await store.push(env)
-
     const record = await store.shift()
     assert.deepStrictEqual(record, env)
-
-    const isQueueEmpty = await store.shift() === undefined
+    const isQueueEmpty = (await store.shift()) === undefined
     assert(isQueueEmpty)
   })
 })
@@ -51,53 +42,56 @@ await describe('SqliteOfflineStore', async () => {
 await test('makeOfflineSqliteTransport stores to db', async () => {
   const db = new Database(':memory:')
   const table = 'test'
-
   let hasCalled = false
-  function request (args, cb): boolean {
+  function request(args, cb) {
     hasCalled = true
     cb(new Error('Fake failure'))
   }
-
   const transport = makeOfflineSqliteTransport({
     url: 'http://example.com/whatever',
     db,
     table,
     flushAtStartup: true,
     httpModule: {
-      request
-    }
+      request,
+    },
   })
-
   await transport.send(newEnv())
-
   await waitUntil(() => hasCalled, 1000)
-
-  const tables = db.prepare(`
+  const tables = db
+    .prepare(
+      `
       SELECT name FROM sqlite_schema WHERE
       type ='table' AND name NOT LIKE 'sqlite_%';
-    `).all()
-
+    `,
+    )
+    .all()
   assert.deepStrictEqual(tables, [{ name: 'test' }], 'table got created')
-
   const rows = db.prepare('SELECT * from test').all()
-
   assert.equal(rows.length, 1, 'item got added')
 })
 
-function newEnv (prefix: string = 'a'): Envelope {
+/**
+ * @param {string} [prefix='a']
+ * @returns {Envelope}
+ */
+function newEnv(prefix = 'a') {
   const id = `${prefix}a3ff046696b4bc6b609ce6d28fde9e2`
-  return createEnvelope<EventEnvelope>({ event_id: id, sent_at: '123' }, [
-    [{ type: 'event' }, { event_id: id }] as EventItem
+  return createEnvelope({ event_id: id, sent_at: '123' }, [
+    [{ type: 'event' }, { event_id: id }],
   ])
 }
 
-async function waitUntil (fn: () => boolean, timeout: number): Promise<void> {
-  return await new Promise(resolve => {
+/**
+ * @param {() => boolean} fn
+ * @param {number} timeout
+ * @returns {Promise<void>}
+ */
+async function waitUntil(fn, timeout) {
+  return await new Promise((resolve) => {
     let runtime = 0
-
     const interval = setInterval(() => {
       runtime += 100
-
       if (fn() || runtime >= timeout) {
         clearTimeout(interval)
         resolve()

@@ -21,14 +21,89 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "ts-node ./test/test.ts"
+    "lint": "eslint --cache .",
+    "format": "prettier . --write",
+    "test": "npm-run-all lint test:prettier build:types test:unit",
+    "test:unit": "node --test",
+    "test:prettier": "prettier --check .",
+    "build:types": "tsc -p tsconfig.npm.json && cpy 'src/**/*.d.ts' dist",
+    "prepack": "npm run build:types",
+    "prepare": "husky install"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.2.0",
-    "ts-node": "^10.9.2"
+    "cpy": "^11.1.0",
+    "cpy-cli": "^5.0.0",
+    "eslint": "^8.57.1",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@sentry/core": "^9.28.0",
-    "@sentry/node": "^9.28.0"
+    "@sentry/node": "^9.28.0",
+    "npm-run-all": "^4.1.5"
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --cache"
+    ],
+    "*": [
+      "prettier --check"
+    ]
+  },
+  "eslintConfig": {
+    "env": {
+      "commonjs": true,
+      "es2022": true,
+      "node": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "ecmaVersion": 13,
+      "sourceType": "module"
+    },
+    "rules": {
+      "curly": [
+        "error",
+        "multi-line"
+      ],
+      "eqeqeq": "error",
+      "default-case": "error",
+      "default-case-last": "error",
+      "prefer-const": "error",
+      "no-unused-vars": [
+        "error",
+        {
+          "varsIgnorePattern": "^_",
+          "argsIgnorePattern": "^_"
+        }
+      ],
+      "no-restricted-imports": [
+        "error",
+        {
+          "paths": [
+            {
+              "name": "assert",
+              "message": "Prefer importing node:assert/strict."
+            },
+            {
+              "name": "node:assert",
+              "message": "Prefer importing node:assert/strict."
+            }
+          ]
+        }
+      ],
+      "no-var": "error"
+    },
+    "ignorePatterns": [
+      "docs/*"
+    ]
   }
 }
