@@ -33,10 +33,16 @@ await describe('SqliteOfflineStore', async () => {
     const db = new Database(':memory:')
     const store = new SqliteOfflineStore(db)
 
+    await store.push(newEnv())
+
     const env = newEnv()
     await store.push(env)
     const record = await store.shift()
     assert.deepStrictEqual(record, env)
+
+    // Remove first item to empty queue
+    await store.shift()
+
     const isQueueEmpty = (await store.shift()) === undefined
     assert(isQueueEmpty)
   })
@@ -80,7 +86,7 @@ await test('makeOfflineSqliteTransport stores to db', async () => {
  */
 function newEnv(prefix = 'a') {
   const id = `${prefix}a3ff046696b4bc6b609ce6d28fde9e2`
-  return createEnvelope({ event_id: id, sent_at: '123' }, [
+  return createEnvelope({ event_id: id, sent_at: new Date().toString() }, [
     [{ type: 'event' }, { event_id: id }],
   ])
 }
