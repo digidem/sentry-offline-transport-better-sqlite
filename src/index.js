@@ -32,6 +32,8 @@ export function makeOfflineSqliteTransport({
     ...opts,
   })
 }
+
+/** @implements {OfflineStore} */
 export class SqliteOfflineStore {
   #db
   #insert
